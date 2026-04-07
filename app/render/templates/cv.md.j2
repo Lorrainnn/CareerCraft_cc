@@ -1,0 +1,73 @@
+# {{ cv.name }}{% if cv.title %} · {{ cv.title }}{% endif %}
+
+{% if cv.contact -%}
+联系方式：{% if cv.contact.phone %}{{ cv.contact.phone }} {% endif %}{% if cv.contact.email %}{{ cv.contact.email }} {% endif %}{% if cv.contact.wechat %}{{ cv.contact.wechat }} {% endif %}{% if cv.contact.location %}{{ cv.contact.location }}{% endif %}
+{% endif %}
+
+{% if cv.socialLinks %}
+社交链接：
+{% for item in cv.socialLinks %}
+- [{{ item.label }}]({{ item.url }})
+{% endfor %}
+{% endif %}
+
+{% if cv.summary %}
+## {{ section_labels.summary }}
+
+{{ cv.summary }}
+{% endif %}
+
+{% if cv.educations %}
+## {{ section_labels.education }}
+
+{% for item in cv.educations %}
+### {{ item.school }} · {{ item.major }}{% if item.degree %} · {{ item.degree }}{% endif %}
+{% if item.startDate or item.endDate %}{{ item.startDate or "" }} - {{ item.endDate or "至今" }}{% endif %}
+{% if item.description %}{{ item.description }}{% endif %}
+
+{% endfor %}
+{% endif %}
+
+{% if cv.experiences %}
+## {{ section_labels.experience }}
+
+{% for item in cv.experiences %}
+### {{ item.company }} · {{ item.role }}
+{% if item.startDate or item.endDate %}{{ item.startDate or "" }} - {{ item.endDate or "至今" }}{% endif %}
+{% if item.description %}{{ item.description }}{% endif %}
+{% for hl in item.highlights %}
+- {{ hl.highlight }}
+{% endfor %}
+
+{% endfor %}
+{% endif %}
+
+{% if cv.projects %}
+## {{ section_labels.project }}
+
+{% for item in cv.projects %}
+### {{ item.name }}{% if item.role %} · {{ item.role }}{% endif %}
+{% if item.startDate or item.endDate %}{{ item.startDate or "" }} - {{ item.endDate or "至今" }}{% endif %}
+{% if item.description %}{{ item.description }}{% endif %}
+{% for hl in item.highlights %}
+- {{ hl.highlight }}
+{% endfor %}
+
+{% endfor %}
+{% endif %}
+
+{% if cv.skills %}
+## {{ section_labels.skill }}
+
+{% for item in cv.skills %}
+- **{{ item.name }}**{% if item.level %}（{{ item.level }}）{% endif %}{% if item.highlights %}：{% for hl in item.highlights %}{{ hl.highlight }}{% if not loop.last %}；{% endif %}{% endfor %}{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if cv.certificates %}
+## {{ section_labels.certificate }}
+
+{% for item in cv.certificates %}
+- {{ item.name }}{% if item.issuer %} · {{ item.issuer }}{% endif %}{% if item.date %}（{{ item.date }}）{% endif %}
+{% endfor %}
+{% endif %}
