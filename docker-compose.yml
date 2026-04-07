@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  jobspark-python:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # JWT
+      - JWT_SECRET=CHANGE_ME
+      - JWT_ACCESS_TOKEN_EXPIRATION=7200
+      # Redis
+      - REDIS_URL=redis://redis:6379/0
+      # Qdrant
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6334
+      # Aliyun OSS (placeholders)
+      - OSS_ENDPOINT=CHANGE_ME
+      - OSS_ACCESS_KEY_ID=CHANGE_ME
+      - OSS_ACCESS_KEY_SECRET=CHANGE_ME
+      - OSS_BUCKET_NAME=CHANGE_ME
+      # LLM
+      - OPENAI_API_KEY=CHANGE_ME
+      - DASHSCOPE_API_KEY=CHANGE_ME
+    depends_on:
+      - redis
+      - qdrant
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  qdrant:
+    image: qdrant/qdrant:v1.16.0
+    ports:
+      - "6334:6334"
+
