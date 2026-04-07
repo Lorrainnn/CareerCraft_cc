@@ -1,28 +1,128 @@
-# JobSpark 智能招聘辅助平台
+# CareerCraft — AI-Powered Resume & Interview Platform
 
-[zread](https://zread.ai/Teng-Yii/JobSpark-Resume)
+> A collaborative learning project focused on production-grade AI engineering — built around a real-world job-seeking use case.
 
-## 1. 系统介绍
+## Overview
 
-JobSpark 是一款基于大语言模型（LLM）和检索增强生成（RAG）技术的智能招聘与求职辅助平台。系统致力于通过 AI 技术解决招聘过程中的痛点，提供智能简历解析、简历优化、精准人岗匹配等核心功能，提升招聘与求职的效率和质量。
+CareerCraft is an LLM-powered platform that transforms unstructured resumes into structured, optimizable, and exportable data, then drives job-tailored optimization and mock interviews on top of it.
 
-## 2. 系统亮点
+Core pipeline:
+```
+Upload → Extract → LLM Parse → Store → RAG Retrieve → Optimize → Export → Interview
+```
 
-- **双智能体协作优化**：构建“裁判-执行者”双智能体协作模型，创新性地引入对抗生成与反思迭代机制，实现简历优化的持续进化。系统以量化评分（Score > 0.8）为质量门禁，通过多轮定向优化将简历提升至面试级标准，并结合实时进度可视化，将AI黑盒过程转化为可感知、可信任的优化旅程，在保障信息真实性的前提下，实现交付质量标准化与优化过程自动化。
-- **AI智能简历解析与优化**：基于 LLM 深度解析简历内容，提供智能优化建议，提升简历竞争力。
-- **多格式简历渲染管线**：构建了从结构化对象到多格式文档的完整渲染流水线，支持将 AI 优化后的简历数据自动转换为 Markdown、HTML、PDF 和 Word 等多种格式。该管线内置严格的字段校验与模板渲染机制，确保生成的简历在不同格式下均保持排版一致性与交付质量，实现“一次优化，多端交付”。
-- **RAG增强检索**：利用HyDE(Hypothetical Document Embeddings) 生成假设性简历，显著提升检索相关性。
-- **精准人岗匹配**：采用向量数据库存储优秀简历模板，结合LLM重排序 (Rerank) 机制，实现高精度的职位匹配。
-- **异步任务处理**：采用异步机制处理简历上传与解析等耗时任务，保障系统的高并发响应能力。
+The project emphasizes engineering depth: async task handling, structured storage, retrieval-augmented generation, streaming feedback, document rendering, and business state management.
 
-## 3. 模块架构
+---
 
-系统采用分层架构设计，职责清晰，主要包含以下核心模块：
+## Highlights
 
-- **application (应用层)**：作为系统的入口，负责业务流程的编排、HTTP请求处理及参数校验（如 `ResumeController`, `ResumeApplicationService`, `AuthValidator`）。
-- **domain (领域层)**：系统的核心心脏，封装了最关键的业务逻辑。包含 Agent 智能体编排（如 `CvOptimizationAgent`）、RAG 检索增强策略（如 `ResumeRagService`）以及多格式简历渲染引擎（如 `CvRendererFacade`）。
-- **model (模型层)**：负责定义系统中的数据结构与对象模型。包含持久化对象PO（如 `CvPO`）、业务对象BO（如 `CvBO`）、LLM交互实体（如 `ScoredCandidate`）以及数据传输对象DTO。
-- **infrastructure (基础设施层)**：为领域层提供技术支撑，实现数据的持久化存储与仓储接口（如 `CvRepositoryImpl`, `CvMapper`）。
-- **common (通用层)**：提供跨模块的通用能力，包括工具类（如 `RedisUtil`, `JwtTokenUtil`）、全局异常处理、枚举定义及常量管理。
-- **config (配置层)**：集中管理系统配置，包括Web环境配置、LLM参数配置及文档格式配置（如 `MarkdownConfig`）。
+- **End-to-end resume pipeline** — raw PDF to structured DB, multi-format export, and interview prep in one flow
+- **Async parsing architecture** — task table + background worker; returns `taskId` immediately, processes without blocking
+- **RAG-based optimization** — HyDE + Embedding + Qdrant + DashScope Rerank for job-tailored resume generation
+- **Multi-round scoring loop** — reviewer scores → tailor rewrites, up to 3 iterations, early-exit at `score > 0.8`
+- **SSE streaming** — real-time `progress` / `result` events during optimization
+- **Multi-format export** — Jinja2 → Markdown → HTML → PDF / DOCX render chain
 
+---
+
+## Architecture
+
+```
+app/
+├── api/           # HTTP routing
+├── services/      # Orchestration (RAG, optimize, interview, render)
+├── repositories/  # Data access (cv, resume_task)
+├── db/            # SQLAlchemy models & session
+└── render/        # Jinja2 templates & export
+schemas/           # Pydantic models (CvBO, task/interview responses)
+sql/               # MySQL DDL
+tests/             # Regression tests
+```
+
+**Data model:** Resume is split into a `cv` main table + child tables (`cv_contact`, `cv_education`, `cv_experience`, `cv_project`, `cv_skill`, etc.) for modular edits, RAG reuse, and incremental updates — more maintainable than storing a raw JSON blob.
+
+---
+
+## Key Features
+
+### Async Resume Parsing
+Upload returns `taskId` instantly. Background worker handles: file download → PDF text extraction → LLM structured parse (`CvBO`) → MySQL write (main + child tables) → status update. Frontend polls `/task/{taskId}/status`.
+
+### RAG Resume Optimization
+1. HyDE generates a hypothetical high-match resume from the JD
+2. Embedding → Qdrant search (`minScore=0.7`, `limit × 3` recall)
+3. DashScope Rerank (`qwen3-vl-rerank`) narrows to top references
+4. Multi-round LLM iteration with per-round feedback + score history
+
+### Mock Interview (Lightweight Agent Orchestration)
+- `start` — loads resume + JD, generates interview plan and first question
+- `continue` — reflects on answer → decides: follow-up / next question / next stage / end
+- `status / finish` — returns progress and final evaluation
+
+---
+
+## Tech Stack
+
+| Layer | Tools |
+|---|---|
+| Backend | FastAPI, SQLAlchemy, PyMySQL, Redis |
+| AI / Retrieval | OpenAI-compatible Chat & Embedding, DashScope Rerank, HyDE |
+| Document | pypdf, Jinja2, CommonMark, WeasyPrint, LibreOffice |
+| Storage | MySQL, Qdrant, Redis, local OSS fallback |
+
+---
+
+## API Endpoints
+
+```
+POST  /api/v1/resumes/upload
+GET   /api/v1/resumes/task/{taskId}/status
+POST  /api/v1/resumes/optimize
+GET   /api/v1/resumes/optimize/stream
+POST  /api/v1/resumes/generateOptimizedFile
+POST  /api/v1/resumes/{resume_id}/embedding
+POST  /api/v1/interviews/sessions
+POST  /api/v1/interviews/sessions/{id}/continue
+GET   /api/v1/interviews/sessions/{id}/status
+POST  /api/v1/interviews/sessions/{id}/finish
+```
+
+---
+
+## Quick Start
+
+```bash
+# Start infrastructure
+docker compose up -d mysql redis qdrant
+
+# Init database
+mysql -u root -p < sql/cv.sql
+
+# Install & run
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Required env vars:**
+`DATABASE_URL` · `JWT_SECRET` · `OPENAI_API_KEY` · `OPENAI_BASE_URL` · `OPENAI_CHAT_MODEL` · `OPENAI_EMBEDDING_MODEL` · `DASHSCOPE_API_KEY` · `DASHSCOPE_RERANK_MODEL` · `QDRANT_HOST/PORT/COLLECTION_NAME` · `REDIS_URL` · `OSS_BUCKET_NAME`
+
+> Local fallback: files stored under `.oss/<bucket>/<key>` for offline development.
+
+---
+
+## Tests
+
+```bash
+pytest
+```
+
+| File | Coverage |
+|---|---|
+| `test_llm_json.py` | LLM JSON cleaning & structured parse |
+| `test_rag_service.py` | RAG retrieval parameter validation |
+| `test_resume_task_repository.py` | Task state transitions & `resume_id` backfill |
+| `test_resume_sse.py` | SSE `progress` and `result` event delivery |
+
+---
